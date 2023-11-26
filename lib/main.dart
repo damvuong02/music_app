@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +12,9 @@ import 'package:music_app/utilities/consoleLog.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'blocs/bloc/audio_player_bloc.dart';
+import 'audio_handel.dart';
+import 'blocs/repositories/audio_handler_repository.dart';
+import 'database/database_helper.dart';
 
 Future<List<File>> findMp3FilesLargeOneMB(Directory directory) async {
   final mp3Files = <File>[];
@@ -85,47 +86,57 @@ void main() async {
             channelGroupName: 'Basic group')
       ],
       debug: true);
-  // final appDocumentDirectory = await getExternalStorageDirectories();
-  // for (var element in appDocumentDirectory!) {
-  //   final list =
-  //       await findMp3FilesLargeOneMB(element.parent.parent.parent.parent);
-  //   for (var element in list) {
-  //     // consoleLog("name", element.path);
-  //     printFileNameWithoutExtension(element.path);
-  //   }
-  // }
-
-  runApp(const MyApp());
+  final appDocumentDirectory = await getExternalStorageDirectories();
+  for (var element in appDocumentDirectory!) {
+    final list =
+        await findMp3FilesLargeOneMB(element.parent.parent.parent.parent);
+    for (var element in list) {
+      consoleLog("name", element.path);
+      // printFileNameWithoutExtension(element.path);
+    }
+  }
+  AudioPlayerHandler audioHandler = await AudioService.init(
+    builder: () => AudioPlayerHandlerImpl(),
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
+      androidNotificationChannelName: 'Audio playback',
+      androidNotificationOngoing: true,
+    ),
+  );
+  runApp(MyApp(
+    audioHandlerRepo: AudioHandleRepository(audioHandler, ''),
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AudioHandleRepository audioHandlerRepo;
+  const MyApp({super.key, required this.audioHandlerRepo});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => AudioPlayerBloc(player: AudioPlayer()),
+    return RepositoryProvider.value(
+      value: audioHandlerRepo,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => DownloadSongsBloc(audioHandlerRepo),
+          ),
+        ],
+        child: MaterialApp(
+          title: 'Flutter Demo',
+          debugShowCheckedModeBanner: false,
+          themeMode: ThemeMode.system,
+          darkTheme: ThemeData(
+              brightness: Brightness.dark, primaryColor: primaryDarkColor),
+          theme: ThemeData(
+            brightness: Brightness.light,
+            primaryColor: primaryLightColor,
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+            useMaterial3: true,
+          ),
+          home: const MyHomePage(1),
         ),
-        BlocProvider(
-          create: (context) => DownloadSongsBloc(),
-        ),
-      ],
-      child: MaterialApp(
-        title: 'Flutter Demo',
-        debugShowCheckedModeBanner: false,
-        themeMode: ThemeMode.system,
-        darkTheme: ThemeData(
-            brightness: Brightness.dark, primaryColor: primaryDarkColor),
-        theme: ThemeData(
-          brightness: Brightness.light,
-          primaryColor: primaryLightColor,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-        ),
-        home: const MyHomePage(1),
       ),
     );
   }

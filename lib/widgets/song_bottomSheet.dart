@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:music_app/blocs/bloc/download_songs_bloc.dart';
+import 'package:music_app/blocs/repositories/audio_handler_repository.dart';
 import 'package:music_app/models/song.dart';
 
 class SongBottomSheet extends StatefulWidget {
@@ -18,6 +19,7 @@ class _SongBottomSheetState extends State<SongBottomSheet> {
       leading: Icon(icon),
       title: Text(title),
       onTap: () {
+        final audioHandler = context.read<AudioHandleRepository>().audioHandler;
         switch (type) {
           case "like":
             print("like");
@@ -43,7 +45,17 @@ class _SongBottomSheetState extends State<SongBottomSheet> {
                       onPressed: () {
                         BlocProvider.of<DownloadSongsBloc>(context)
                             .add(DeleteDownLoadSongs(widget.song.id));
-                        Navigator.of(context).pop(); // Đóng AlertDialog
+                        // nếu đang phát playlist download mà xóa bài hát download thì loại bỏ trong mediaLybrary
+                        if (context
+                                .read<AudioHandleRepository>()
+                                .currentPlayingPlaylist ==
+                            "download") {
+                          audioHandler
+                              .removeQueueItem(widget.song.toMediaItem());
+                        }
+                        Navigator.of(context)
+                          ..pop()
+                          ..pop();
                       },
                       child: const Text("Xóa"),
                     ),
@@ -72,7 +84,17 @@ class _SongBottomSheetState extends State<SongBottomSheet> {
                       onPressed: () {
                         BlocProvider.of<DownloadSongsBloc>(context)
                             .add(KillDownLoadSongs(widget.song.id));
-                        Navigator.of(context).pop(); // Đóng AlertDialog
+                        // nếu đang phát playlist download mà xóa bài hát download thì loại bỏ trong mediaLybrary
+                        if (context
+                                .read<AudioHandleRepository>()
+                                .currentPlayingPlaylist ==
+                            "download") {
+                          audioHandler
+                              .removeQueueItem(widget.song.toMediaItem());
+                        }
+                        Navigator.of(context)
+                          ..pop()
+                          ..pop();
                       },
                       child: const Text("Xóa"),
                     ),
@@ -85,6 +107,7 @@ class _SongBottomSheetState extends State<SongBottomSheet> {
           case "download":
             BlocProvider.of<DownloadSongsBloc>(context)
                 .add(DownloadSong(song: widget.song, context: context));
+
             Navigator.pop(context);
             break;
         }

@@ -15,10 +15,9 @@ class SongDatabase {
   Future<Database> initDatabase() async {
     final path = await getDatabasesPath();
     final databasePath = '$path/song_database.db';
-
     return await openDatabase(
       databasePath,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE songs(
@@ -32,7 +31,8 @@ class SongDatabase {
             image_song TEXT NOT NULL,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            is_download_in_app INTEGER
+            is_download_in_app INTEGER,
+            duration INTEGER
           )
         ''');
       },
@@ -46,7 +46,8 @@ class SongDatabase {
 
   Future<List<Song>> getAllSongs() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('songs');
+    final List<Map<String, dynamic>> maps =
+        await db.query('songs', orderBy: 'title');
     return List.generate(maps.length, (i) {
       return Song.fromMap(maps[i]);
     });
@@ -55,5 +56,12 @@ class SongDatabase {
   Future<int> deleteSong(int id) async {
     final db = await database;
     return await db.delete('songs', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteDB() async {
+    final path = await getDatabasesPath();
+    final databasePath = '$path/song_database.db';
+    await deleteDatabase(databasePath);
+    _database = null;
   }
 }

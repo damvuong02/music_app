@@ -39,8 +39,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
             child: Column(
               children: [
                 Container(
-                  height: 350,
-                  padding: const EdgeInsets.only(top: 15),
+                height: 350,
+                padding: const EdgeInsets.only(top: 15),
                   child: Column(
                     children: [
                       ClipRRect(

@@ -9,15 +9,15 @@ class SharedPreferrenceMethod {
     await prefs.setBool('random', isRandomSong);
   }
 
-  void setRepeatSongList(bool isRepeatSongList) async {
+  void setRepeatSongList(int isRepeatSongList) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('repeat', isRepeatSongList);
+    await prefs.setInt('repeat', isRepeatSongList);
   }
 
-  Future<bool> getRepeatSongList() async {
+  Future<int> getRepeatSongList() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final bool? repeat = prefs.getBool('repeat');
-    return repeat ?? false;
+    final int? repeat = prefs.getInt('repeat');
+    return repeat ?? 0;
   }
 
   Future<bool> getRandomSong() async {

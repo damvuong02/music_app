@@ -1,12 +1,20 @@
+import 'dart:math';
+
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:music_app/audio_handel.dart';
 import 'package:music_app/blocs/bloc/download_songs_bloc.dart';
 import 'package:music_app/methods/shared_preference_method.dart';
 import 'package:music_app/models/song.dart';
+import 'package:music_app/utilities/consoleLog.dart';
 import 'package:music_app/widgets/app_bar.dart';
 import 'package:music_app/widgets/song_item.dart';
 import 'package:music_app/widgets/task_bar.dart';
+
+import '../blocs/repositories/audio_handler_repository.dart';
+import 'detail_song.dart';
 
 class DownloadSongScreen extends StatefulWidget {
   const DownloadSongScreen({super.key});
@@ -18,6 +26,8 @@ class DownloadSongScreen extends StatefulWidget {
 class _DownloadSongScreenState extends State<DownloadSongScreen> {
   TextEditingController textController = TextEditingController();
   Song? currentSong;
+  bool isSetedDownloadListSong = false;
+  int? currentSongIndex;
   void getCurrentSong() async {
     Song? song = await SharedPreferrenceMethod().getCurrentSong();
     setState(() {
@@ -33,8 +43,11 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final _audioHandler = context.read<AudioHandleRepository>().audioHandler;
     return BlocBuilder<DownloadSongsBloc, DownloadSongsState>(
       builder: (context, state) {
+        List<MediaItem> listMedia =
+            state.downloadSongs.map((song) => song.toMediaItem()).toList();
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
@@ -64,7 +77,24 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         width: MediaQuery.sizeOf(context).width * 0.6,
                         child: InkWell(
-                          onTap: () {},
+                          onTap: () async {
+                            context
+                                .read<AudioHandleRepository>()
+                                .setCurrentPlayingPlaylist("download");
+                            if (!isSetedDownloadListSong) {
+                              await _audioHandler.updateQueue(listMedia);
+                            }
+
+                            await _audioHandler
+                                .setShuffleMode(AudioServiceShuffleMode.all);
+                            SharedPreferrenceMethod().setRandomSong(true);
+                            Random random = Random();
+                            int index =
+                                random.nextInt(state.downloadSongs.length);
+                            await _audioHandler.skipToQueueItem(index);
+                            Navigator.of(context)
+                                .push(_createRoute(DetailSong()));
+                          },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 vertical: 10, horizontal: 10),
@@ -86,15 +116,29 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
                           children: List.generate(state.downloadSongs.length,
                               (index) {
                         Song song = state.downloadSongs[index];
-                        return SongWidget(
-                          isFavouriteSong: false,
-                          song: Song(
-                              id: song.id,
-                              title: song.title,
-                              artist: song.artist,
-                              imageSong: song.imageSong,
-                              link: song.link,
-                              isDownloadInApp: song.isDownloadInApp),
+                        return InkWell(
+                          onTap: () async {
+                            context
+                                .read<AudioHandleRepository>()
+                                .setCurrentPlayingPlaylist("download");
+                            if (!isSetedDownloadListSong) {
+                              await _audioHandler.updateQueue(listMedia);
+                            }
+
+                            await _audioHandler.skipToQueueItem(index);
+                            Navigator.of(context)
+                                .push(_createRoute(DetailSong()));
+                          },
+                          child: SongWidget(
+                            isFavouriteSong: false,
+                            song: Song(
+                                id: song.id,
+                                title: song.title,
+                                artist: song.artist,
+                                imageSong: song.imageSong,
+                                link: song.link,
+                                isDownloadInApp: song.isDownloadInApp),
+                          ),
                         );
                       }))
                     ],
@@ -132,4 +176,22 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
       },
     );
   }
+}
+
+Route _createRoute(var page) {
+  return PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const begin = Offset(0.0, 1.0);
+      const end = Offset.zero;
+      const curve = Curves.ease;
+
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+  );
 }

@@ -1,3 +1,4 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:intl/intl.dart';
 
 class Song {
@@ -12,23 +13,27 @@ class Song {
   DateTime? createdAt;
   DateTime? updatedAt;
   bool? isDownloadInApp;
-  Song(
-      {required this.id,
-      required this.title,
-      String? artist,
-      this.album,
-      this.categoryId,
-      this.lyrics,
-      required this.link,
-      String? imageSong,
-      DateTime? createdAt,
-      DateTime? updatedAt,
-      this.isDownloadInApp})
-      : artist = artist ?? "Unknow Artist",
+  Duration? duration;
+
+  Song({
+    required this.id,
+    required this.title,
+    String? artist,
+    this.album,
+    this.categoryId,
+    this.lyrics,
+    required this.link,
+    String? imageSong,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    this.isDownloadInApp,
+    this.duration,
+  })  : artist = artist ?? "Unknown Artist",
         imageSong = imageSong ??
             "https://cdn.vectorstock.com/i/preview-1x/65/30/default-image-icon-missing-picture-page-vector-40546530.jpg",
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
+
   Song copyWith({
     int? id,
     String? title,
@@ -41,6 +46,7 @@ class Song {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isDownloadInApp,
+    Duration? duration,
   }) {
     return Song(
       id: id ?? this.id,
@@ -54,6 +60,7 @@ class Song {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDownloadInApp: isDownloadInApp ?? this.isDownloadInApp,
+      duration: duration ?? this.duration,
     );
   }
 
@@ -70,6 +77,9 @@ class Song {
       createdAt: DateFormat('yyyy-MM-ddTHH:mm:ss.SSS').parse(map['created_at']),
       updatedAt: DateFormat('yyyy-MM-ddTHH:mm:ss.SSS').parse(map['updated_at']),
       isDownloadInApp: map['is_download_in_app'],
+      duration: map['duration'] != null
+          ? Duration(milliseconds: map['duration'])
+          : null,
     );
   }
 
@@ -86,6 +96,7 @@ class Song {
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'is_download_in_app': isDownloadInApp,
+      'duration': duration?.inMilliseconds,
     };
   }
 
@@ -104,6 +115,7 @@ class Song {
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'is_download_in_app': isDownloadInAppValue,
+      'duration': duration?.inMilliseconds,
     };
   }
 
@@ -127,6 +139,20 @@ class Song {
           : isDownloadInAppValue == 1
               ? true
               : false,
+      duration: map['duration'] != null
+          ? Duration(milliseconds: map['duration'])
+          : null,
+    );
+  }
+
+  MediaItem toMediaItem() {
+    return MediaItem(
+      id: link,
+      album: album,
+      title: title,
+      artist: artist,
+      duration: duration,
+      artUri: Uri.parse(imageSong),
     );
   }
 }

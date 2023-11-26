@@ -6,27 +6,29 @@ import 'package:bloc/bloc.dart';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:music_app/database/database_helper.dart';
 import 'package:music_app/models/song.dart';
-import 'package:music_app/utilities/consoleLog.dart';
 import 'package:path_provider/path_provider.dart';
+
+import '../repositories/audio_handler_repository.dart';
 
 part 'download_songs_event.dart';
 part 'download_songs_state.dart';
 
 class DownloadSongsBloc extends Bloc<DownloadSongsEvent, DownloadSongsState> {
   final SongDatabase _songDatabase = SongDatabase();
+  final AudioHandleRepository repository;
   Timer? _debounce;
-  Future<String?> downloadFile(
-      String fileUrl, String fileName, Song song) async {
+  Future<Song?> downloadFile(Song song) async {
     final dio = Dio(); // Tạo một phiên Dio mới
 
     try {
       final savePath =
-          "${(await getExternalStorageDirectory())!.path}/$fileName";
+          "${(await getExternalStorageDirectory())!.path}/${song.title}_${song.artist}_.mp3";
       updateDownloadProgressNotification(0);
       final response = await dio.download(
-        fileUrl, // URL của tệp bạn muốn tải
+        song.link, // URL của tệp bạn muốn tải
         savePath,
         onReceiveProgress: (received, total) {
           if (total != -1) {
@@ -42,11 +44,23 @@ class DownloadSongsBloc extends Bloc<DownloadSongsEvent, DownloadSongsState> {
           }
         },
       );
-      SongDatabase()
-          .insertSong(song.copyWith(link: savePath, isDownloadInApp: true));
-      return savePath;
+      final player = AudioPlayer();
+      // Tạo một AudioSource để có thể lấy thông tin độ dài của file
+      final audioSource = AudioSource.uri(Uri.parse(song.link));
+      await player.setAudioSource(audioSource);
+      // Đợi cho đến khi player đã load xong
+      await player.load();
+      // Lấy độ dài của file MP3
+      final duration = player.duration;
+      // Giải phóng resources của player
+      player.dispose();
+      _songDatabase.insertSong(song.copyWith(
+          link: savePath, isDownloadInApp: true, duration: duration));
+
+      return song.copyWith(
+          link: savePath, isDownloadInApp: true, duration: duration);
     } catch (e) {
-      print('Error during download: $e');
+      debugPrint('Error during download: $e');
       AwesomeNotifications().cancel(1);
       AwesomeNotifications().createNotification(
         content: NotificationContent(
@@ -79,7 +93,7 @@ class DownloadSongsBloc extends Bloc<DownloadSongsEvent, DownloadSongsState> {
     }
   }
 
-  DownloadSongsBloc() : super(const DownloadSongsState([])) {
+  DownloadSongsBloc(this.repository) : super(const DownloadSongsState([])) {
     on<FetchDownloadSongs>((event, emit) async {
       List<Song> songs = await _songDatabase.getAllSongs();
       emit(state.copyWith(downloadSongs: songs));
@@ -99,11 +113,13 @@ class DownloadSongsBloc extends Bloc<DownloadSongsEvent, DownloadSongsState> {
             return;
           }
         }
-        final String? savePath = await downloadFile(event.song.link,
-            "${event.song.title}_${event.song.artist}_.mp3", event.song);
-        if (savePath != null) {
-          updatedDownloadSongs
-              .add(event.song.copyWith(isDownloadInApp: true, link: savePath));
+        final Song? newSong = await downloadFile(event.song);
+        if (newSong != null) {
+          if (repository.currentPlayingPlaylist == "download") {
+            repository.audioHandler.addQueueItem(newSong.toMediaItem());
+          }
+          updatedDownloadSongs.add(newSong);
+          updatedDownloadSongs.sort((a, b) => a.title.compareTo(b.title));
           emit(state.copyWith(downloadSongs: updatedDownloadSongs));
         } else {
           ScaffoldMessenger.of(event.context).showSnackBar(
@@ -126,7 +142,6 @@ class DownloadSongsBloc extends Bloc<DownloadSongsEvent, DownloadSongsState> {
           }
         }
         emit(state.copyWith(downloadSongs: updatedDownloadSongs));
-        
       },
     );
     on<KillDownLoadSongs>(

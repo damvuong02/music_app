@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:music_app/blocs/bloc/download_songs_bloc.dart';
+import 'package:music_app/methods/shared_preference_method.dart';
+import 'package:music_app/models/song.dart';
 import 'package:music_app/screens/discover.dart';
 import 'package:music_app/screens/person.dart';
 import 'package:music_app/widgets/app_bar.dart';
+
+import '../blocs/repositories/audio_handler_repository.dart';
 
 class MyHomePage extends StatefulWidget {
   final int currentPage;
@@ -40,8 +44,19 @@ class _MyHomePageState extends State<MyHomePage> {
       ProfileScreen(),
     ]);
     _currentIndex = widget.currentPage;
+
     BlocProvider.of<DownloadSongsBloc>(context).add(FetchDownloadSongs());
     super.initState();
+  }
+
+  void initLastPlaySong() async {
+    Song? song = await SharedPreferrenceMethod().getCurrentSong();
+    if (song != null) {
+      context
+          .read<AudioHandleRepository>()
+          .audioHandler
+          .updateQueue([song.toMediaItem()]);
+    }
   }
 
   @override

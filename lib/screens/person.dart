@@ -5,7 +5,6 @@ import 'package:music_app/blocs/bloc/download_songs_bloc.dart';
 import 'package:music_app/methods/shared_preference_method.dart';
 import 'package:music_app/models/song.dart';
 import 'package:music_app/screens/downloadsong.dart';
-import 'package:music_app/utilities/consoleLog.dart';
 import 'package:music_app/widgets/icon_button.dart';
 import 'package:music_app/widgets/task_bar.dart';
 
@@ -56,21 +55,24 @@ class _PersonPageState extends State<PersonPage> {
                       const SizedBox(
                         width: 20,
                       ),
-                      MyButton(
-                        backgroundColor: Colors.grey,
-                        backgroundIconColor: Colors.orangeAccent,
-                        icon: FontAwesomeIcons.compactDisc,
-                        title: "Bài hát đã tải",
-                        subTitle:
-                            "${BlocProvider.of<DownloadSongsBloc>(context).state.downloadSongs.length}",
-                        onTap: () async {
-                          int index =
-                              await Navigator.push(context, MaterialPageRoute(
-                            builder: (context) {
-                              return const DownloadSongScreen();
+                      BlocBuilder<DownloadSongsBloc, DownloadSongsState>(
+                        builder: (context, state) {
+                          return MyButton(
+                            backgroundColor: Colors.grey,
+                            backgroundIconColor: Colors.orangeAccent,
+                            icon: FontAwesomeIcons.compactDisc,
+                            title: "Bài hát đã tải",
+                            subTitle: "${state.downloadSongs.length}",
+                            onTap: () async {
+                              int index = await Navigator.push(context,
+                                  MaterialPageRoute(
+                                builder: (context) {
+                                  return const DownloadSongScreen();
+                                },
+                              ));
+                              widget.callback(index);
                             },
-                          ));
-                          widget.callback(index);
+                          );
                         },
                       ),
                       const SizedBox(
