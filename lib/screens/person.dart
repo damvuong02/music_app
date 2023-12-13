@@ -1,12 +1,18 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:music_app/blocs/bloc/download_songs_bloc.dart';
-import 'package:music_app/methods/shared_preference_method.dart';
-import 'package:music_app/models/song.dart';
+import 'package:music_app/database/database_helper.dart';
 import 'package:music_app/screens/downloadsong.dart';
+import 'package:music_app/utilities/consoleLog.dart';
 import 'package:music_app/widgets/icon_button.dart';
-import 'package:music_app/widgets/task_bar.dart';
+import 'package:music_app/widgets/playlist_item.dart';
+import '../blocs/cubit/playlist_cubit.dart';
+import '../blocs/cubit/playlist_song_cubit.dart';
+import '../models/playlist.dart';
+import 'playlist_detail.dart';
 
 class PersonPage extends StatefulWidget {
   final Function(int) callback;
@@ -17,197 +23,220 @@ class PersonPage extends StatefulWidget {
 }
 
 class _PersonPageState extends State<PersonPage> {
-  Song? currentSong;
-  void getCurrentSong() async {
-    Song? song = await SharedPreferrenceMethod().getCurrentSong();
-    setState(() {
-      currentSong = song;
-    });
+  void getPlaylists() async {
+    BlocProvider.of<PlaylistCubit>(context).getAllPlaylist();
   }
 
   @override
   void initState() {
-    getCurrentSong();
     super.initState();
+    getPlaylists();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      MyButton(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  MyButton(
+                    backgroundColor: Colors.grey,
+                    backgroundIconColor: Colors.blueAccent,
+                    icon: FontAwesomeIcons.heart,
+                    title: "Bài hát yêu thích",
+                    subTitle: "200",
+                    onTap: () {},
+                  ),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  BlocBuilder<DownloadSongsBloc, DownloadSongsState>(
+                    builder: (context, state) {
+                      return MyButton(
                         backgroundColor: Colors.grey,
-                        backgroundIconColor: Colors.blueAccent,
-                        icon: FontAwesomeIcons.heart,
-                        title: "Bài hát yêu thích",
-                        subTitle: "200",
-                        onTap: () {},
-                      ),
-                      const SizedBox(
-                        width: 20,
-                      ),
-                      BlocBuilder<DownloadSongsBloc, DownloadSongsState>(
-                        builder: (context, state) {
-                          return MyButton(
-                            backgroundColor: Colors.grey,
-                            backgroundIconColor: Colors.orangeAccent,
-                            icon: FontAwesomeIcons.compactDisc,
-                            title: "Bài hát đã tải",
-                            subTitle: "${state.downloadSongs.length}",
-                            onTap: () async {
-                              int index = await Navigator.push(context,
-                                  MaterialPageRoute(
-                                builder: (context) {
-                                  return const DownloadSongScreen();
-                                },
-                              ));
-                              widget.callback(index);
+                        backgroundIconColor: Colors.orangeAccent,
+                        icon: FontAwesomeIcons.compactDisc,
+                        title: "Bài hát đã tải",
+                        subTitle: "${state.downloadSongs.length}",
+                        onTap: () async {
+                          int index =
+                              await Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return const DownloadSongScreen();
                             },
-                          );
+                          ));
+                          widget.callback(index);
                         },
-                      ),
-                      const SizedBox(
-                        width: 20,
-                      ),
-                      MyButton(
-                        backgroundColor: Colors.grey,
-                        backgroundIconColor: Colors.pinkAccent,
-                        icon: FontAwesomeIcons.music,
-                        title: "Playlist",
-                        subTitle: "14",
-                        onTap: () {},
-                      ),
-                    ],
-                  )),
-              const SizedBox(
-                height: 30,
-              ),
-              Expanded(
-                  child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                      );
+                    },
+                  ),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  MyButton(
+                    backgroundColor: Colors.grey,
+                    backgroundIconColor: Colors.pinkAccent,
+                    icon: FontAwesomeIcons.music,
+                    title: "Playlist",
+                    subTitle: "14",
+                    onTap: () {},
+                  ),
+                ],
+              )),
+          const SizedBox(
+            height: 30,
+          ),
+          Expanded(
+              child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Playlist",
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Row(
                   children: [
-                    const Text(
-                      "Playlist",
-                      style:
-                          TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    Row(
-                      children: [
-                        InkWell(
-                          onTap: () {},
-                          child: Container(
-                              height: 50,
-                              width: 50,
-                              margin: const EdgeInsets.only(left: 10),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  color: Colors.purpleAccent),
-                              child: const Icon(FontAwesomeIcons.plus)),
-                        ),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text(
-                          "Tạo Playlist",
-                          style: TextStyle(fontSize: 18),
-                        )
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Container(
-                          height: 70,
-                          padding: const EdgeInsets.all(10),
-                          child: Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFU7-eJHS1DerxF4CF-ioTXfCaFoqGalWGZ8k3HYA&s",
-                                  loadingBuilder: (BuildContext context,
-                                      Widget child,
-                                      ImageChunkEvent? loadingProgress) {
-                                    if (loadingProgress == null) {
-                                      return child; // Return the image if it's loaded successfully
-                                    }
-                                    return CircularProgressIndicator(
-                                      value:
-                                          loadingProgress.expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                      .cumulativeBytesLoaded /
-                                                  loadingProgress
-                                                      .expectedTotalBytes!
-                                              : null,
-                                    );
-                                  },
-                                  errorBuilder: (BuildContext context,
-                                      Object exception,
-                                      StackTrace? stackTrace) {
-                                    // Catch network image loading failure and display a fallback AssetImage
-                                    return Image.asset(
-                                      "assets/images/meow.jpg",
-                                      fit: BoxFit.cover,
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(
-                                width: 10,
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Play list 1",
-                                    style: const TextStyle(fontSize: 18),
-                                  ),
-                                  Row(
+                    InkWell(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            String textFieldValue = '';
+                            return StatefulBuilder(
+                              builder: (context, setState) {
+                                return AlertDialog(
+                                  title: const Text('Tạo Playlist mới'),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(
-                                        "Vuong",
-                                        style: TextStyle(
-                                            color: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall!
-                                                .color!
-                                                .withOpacity(0.7)),
+                                      TextField(
+                                        onChanged: (value) {
+                                          setState(() {
+                                            textFieldValue = value;
+                                          });
+                                        },
+                                        decoration: InputDecoration(
+                                          hintText: 'Nhập tên Playlist',
+                                          filled: true,
+                                          fillColor: const Color.fromARGB(
+                                              255, 84, 4, 154),
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(30.0),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        height: 30,
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: textFieldValue.isNotEmpty
+                                            ? () {
+                                                final playlist = Playlist(
+                                                    id: Random().nextInt(9999),
+                                                    name: textFieldValue,
+                                                    image:
+                                                        "https://www.listenspotify.com/uploaded_files/Thf_1616456968.jpg",
+                                                    author: null);
+                                                Navigator.pop(context);
+                                                BlocProvider.of<PlaylistCubit>(
+                                                        context)
+                                                    .createPlaylist(playlist);
+                                                Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          DetailPlaylist(
+                                                              playlist:
+                                                                  playlist),
+                                                    ));
+                                              }
+                                            : null,
+                                        style: ButtonStyle(
+                                          backgroundColor:
+                                              MaterialStateProperty.all<Color>(
+                                            const Color(0xff9b4de0), // Màu nền
+                                          ),
+                                          shape: MaterialStateProperty.all<
+                                              OutlinedBorder>(
+                                            RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      30.0), // Độ cong border
+                                            ),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 15),
+                                          child: const Text(
+                                            'Tạo mới',
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
                                       )
                                     ],
-                                  )
-                                ],
-                              ),
-                            ],
-                          ),
-                        )
-                      ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                      child: Container(
+                          height: 50,
+                          width: 50,
+                          margin: const EdgeInsets.only(left: 10),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Colors.purpleAccent),
+                          child: const Icon(FontAwesomeIcons.plus)),
                     ),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    const Text(
+                      "Tạo Playlist",
+                      style: TextStyle(fontSize: 18),
+                    )
                   ],
                 ),
-              ))
-            ],
-          ),
-        ),
-        Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: currentSong != null ? const TaskBar() : const SizedBox())
-      ],
+                BlocBuilder<PlaylistCubit, List<Playlist>>(
+                  builder: (context, state) {
+                    return Column(
+                      children: List.generate(
+                          state.length,
+                          (index) => InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => DetailPlaylist(
+                                        playlist: state[index],
+                                      ),
+                                    ));
+                              },
+                              child: PlayListItem(playlist: state[index]))),
+                    );
+                  },
+                ),
+                const SizedBox(height: 70)
+              ],
+            ),
+          ))
+        ],
+      ),
     );
   }
 }

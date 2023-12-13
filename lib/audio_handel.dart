@@ -238,6 +238,7 @@ class AudioPlayerHandlerImpl extends BaseAudioHandler
   @override
   Future<void> addQueueItems(List<MediaItem> mediaItems) async {
     await _playlist.addAll(_itemsToSources(mediaItems));
+    _mediaLibrary.addItems(mediaItems);
   }
 
   @override

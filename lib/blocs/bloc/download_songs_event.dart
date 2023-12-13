@@ -9,6 +9,11 @@ sealed class DownloadSongsEvent extends Equatable {
 
 class FetchDownloadSongs extends DownloadSongsEvent {}
 
+class LoadDeviceSongs extends DownloadSongsEvent {
+  final BuildContext context;
+  const LoadDeviceSongs({required this.context});
+}
+
 class DownloadSong extends DownloadSongsEvent {
   final Song song;
   final BuildContext context;

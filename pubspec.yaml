@@ -30,6 +30,8 @@ dependencies:
   # audioplayers: ^5.2.0
   rxdart: ^0.27.7
   audio_session: ^0.1.16
+  ringtone_set: ^0.0.2 
+  syncfusion_flutter_charts: ^23.2.7
 
 dev_dependencies:
   flutter_test:

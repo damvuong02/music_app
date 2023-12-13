@@ -5,51 +5,16 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:music_app/blocs/bloc/download_songs_bloc.dart';
+import 'package:music_app/blocs/cubit/playlist_cubit.dart';
+import 'package:music_app/blocs/cubit/playlist_song_cubit.dart';
 import 'package:music_app/constants/colors.dart';
+import 'package:music_app/database/database_helper.dart';
 import 'package:music_app/screens/home.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:music_app/utilities/consoleLog.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-
+import 'package:sqflite/sqflite.dart';
 import 'audio_handel.dart';
 import 'blocs/repositories/audio_handler_repository.dart';
-import 'database/database_helper.dart';
-
-Future<List<File>> findMp3FilesLargeOneMB(Directory directory) async {
-  final mp3Files = <File>[];
-  final entities = directory.listSync();
-
-  for (final entity in entities) {
-    if (entity is File && entity.path.toLowerCase().endsWith('.mp3')) {
-      // Kiểm tra nếu là tệp .mp3 thì kiểm tra dung lượng
-      final file = entity;
-      final fileSize = await file.length();
-      // file lớn hơn 1MB
-      if (fileSize >= 1048576) {
-        mp3Files.add(entity);
-      }
-    } else if (entity is Directory) {
-      final mp3FilesInSubdirectory = await findMp3FilesLargeOneMB(entity);
-      mp3Files.addAll(mp3FilesInSubdirectory);
-    }
-  }
-
-  return mp3Files;
-}
-
-void printFileNameWithoutExtension(String filePath) {
-  final parts = filePath.split('/');
-
-  if (parts.isNotEmpty) {
-    final fileName = parts.last;
-    String name = fileName.replaceAll('.mp3', '');
-    name = name.replaceAll(RegExp(r'^[\d\W]+'), '');
-    consoleLog('Tên tệp', name);
-  } else {
-    consoleLog('name', 'Không tìm thấy tệp hoặc đường dẫn không hợp lệ.');
-  }
-}
 
 late AudioHandler _audioHandler;
 void main() async {
@@ -86,15 +51,7 @@ void main() async {
             channelGroupName: 'Basic group')
       ],
       debug: true);
-  final appDocumentDirectory = await getExternalStorageDirectories();
-  for (var element in appDocumentDirectory!) {
-    final list =
-        await findMp3FilesLargeOneMB(element.parent.parent.parent.parent);
-    for (var element in list) {
-      consoleLog("name", element.path);
-      // printFileNameWithoutExtension(element.path);
-    }
-  }
+
   AudioPlayerHandler audioHandler = await AudioService.init(
     builder: () => AudioPlayerHandlerImpl(),
     config: const AudioServiceConfig(
@@ -103,6 +60,7 @@ void main() async {
       androidNotificationOngoing: true,
     ),
   );
+  // DatabaseHelper().deleteAllSongs();
   runApp(MyApp(
     audioHandlerRepo: AudioHandleRepository(audioHandler, ''),
   ));
@@ -121,6 +79,12 @@ class MyApp extends StatelessWidget {
         providers: [
           BlocProvider(
             create: (context) => DownloadSongsBloc(audioHandlerRepo),
+          ),
+          BlocProvider(
+            create: (context) => PlaylistSongCubit(),
+          ),
+          BlocProvider(
+            create: (context) => PlaylistCubit(),
           ),
         ],
         child: MaterialApp(

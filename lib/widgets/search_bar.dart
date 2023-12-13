@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 class MySearchBar extends StatelessWidget {
   final TextEditingController controller;
   final Function searchFunction;
+  final Function? suffixFunction;
   const MySearchBar(
-      {super.key, required this.controller, required this.searchFunction});
+      {super.key,
+      required this.controller,
+      required this.searchFunction,
+      this.suffixFunction});
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +27,9 @@ class MySearchBar extends StatelessWidget {
             suffixIcon: GestureDetector(
               onTap: () {
                 controller.clear();
+                if (suffixFunction != null) {
+                  suffixFunction!();
+                }
               },
               child: const Icon(Icons.clear),
             ),

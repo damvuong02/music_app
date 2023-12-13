@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:bloc/bloc.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_app/database/database_helper.dart';
 import 'package:music_app/models/song.dart';
+import 'package:music_app/utilities/consoleLog.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../repositories/audio_handler_repository.dart';
@@ -17,7 +19,7 @@ part 'download_songs_event.dart';
 part 'download_songs_state.dart';
 
 class DownloadSongsBloc extends Bloc<DownloadSongsEvent, DownloadSongsState> {
-  final SongDatabase _songDatabase = SongDatabase();
+  final DatabaseHelper _songDatabase = DatabaseHelper();
   final AudioHandleRepository repository;
   Timer? _debounce;
   Future<Song?> downloadFile(Song song) async {
@@ -93,6 +95,77 @@ class DownloadSongsBloc extends Bloc<DownloadSongsEvent, DownloadSongsState> {
     }
   }
 
+  Future<List<File>> findMp3FilesLargeOneMB(Directory directory) async {
+    final mp3Files = <File>[];
+    final entities = directory.listSync();
+
+    for (final entity in entities) {
+      if (entity is File && entity.path.toLowerCase().endsWith('.mp3')) {
+        // Kiểm tra nếu là tệp .mp3 thì kiểm tra dung lượng
+        final file = entity;
+        final fileSize = await file.length();
+        // file lớn hơn 1.5MB
+        if (fileSize >= 1572864) {
+          mp3Files.add(entity);
+        }
+      } else if (entity is Directory) {
+        if (entity.path.contains('com.example.music_app')) {
+          // Bỏ qua thư mục này và không tiếp tục đệ quy vào bên trong nó
+          continue;
+        }
+        final mp3FilesInSubdirectory = await findMp3FilesLargeOneMB(entity);
+        mp3Files.addAll(mp3FilesInSubdirectory);
+      }
+    }
+
+    return mp3Files;
+  }
+
+  String getSongName(String filePath) {
+    final parts = filePath.split('/');
+    final fileName = parts.last;
+    String name = fileName.replaceAll('.mp3', '');
+    name = name.replaceAll(RegExp(r'^[\d\W]+'), '');
+
+    return name;
+  }
+
+  Future<List<Song>> loadDeviceMusic() async {
+    List<Song> songs = [];
+    final appDocumentDirectory = await getExternalStorageDirectories();
+
+    await Future.forEach(appDocumentDirectory!, (element) async {
+      final list =
+          await findMp3FilesLargeOneMB(element.parent.parent.parent.parent);
+
+      await Future.forEach(list, (element) async {
+        bool songExists =
+            await DatabaseHelper().checkSongExistence(element.path);
+
+        if (!songExists) {
+          final player = AudioPlayer();
+          final audioSource = AudioSource.uri(Uri.parse(element.path));
+          await player.setAudioSource(audioSource);
+          await player.load();
+          final duration = player.duration;
+          player.dispose();
+
+          Song song = Song(
+            id: Random().nextInt(99999999),
+            title: getSongName(element.path),
+            link: element.path,
+            isDownloadInApp: false,
+            duration: duration,
+          );
+
+          await DatabaseHelper().insertSong(song);
+          songs.add(song);
+        }
+      });
+    });
+    return songs;
+  }
+
   DownloadSongsBloc(this.repository) : super(const DownloadSongsState([])) {
     on<FetchDownloadSongs>((event, emit) async {
       List<Song> songs = await _songDatabase.getAllSongs();
@@ -129,6 +202,34 @@ class DownloadSongsBloc extends Bloc<DownloadSongsEvent, DownloadSongsState> {
           );
           return;
         }
+      },
+    );
+    on<LoadDeviceSongs>(
+      (event, emit) async {
+        AwesomeNotifications().createNotification(
+          content: NotificationContent(
+              id: 2,
+              channelKey: "basic_channel",
+              title: 'Quét nhạc',
+              body: "Đang quét nhạc trong máy",
+              color: Colors.amber),
+        );
+        List<Song> updatedDownloadSongs = List.from(state.downloadSongs);
+
+        List<Song> deviceSongs = await loadDeviceMusic();
+        updatedDownloadSongs.addAll(deviceSongs);
+        if (repository.currentPlayingPlaylist == "download") {
+          repository.audioHandler.addQueueItems(
+              deviceSongs.map((song) => song.toMediaItem()).toList());
+        }
+        updatedDownloadSongs.sort((a, b) => a.title.compareTo(b.title));
+        emit(state.copyWith(downloadSongs: updatedDownloadSongs));
+        AwesomeNotifications().cancel(2);
+        ScaffoldMessenger.of(event.context).showSnackBar(
+          SnackBar(
+            content: Text("Đã thêm ${deviceSongs.length} vào danh sách"),
+          ),
+        );
       },
     );
     on<DeleteDownLoadSongs>(

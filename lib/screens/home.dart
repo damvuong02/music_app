@@ -6,9 +6,13 @@ import 'package:music_app/methods/shared_preference_method.dart';
 import 'package:music_app/models/song.dart';
 import 'package:music_app/screens/discover.dart';
 import 'package:music_app/screens/person.dart';
+import 'package:music_app/screens/setting_screen.dart';
+import 'package:music_app/utilities/consoleLog.dart';
 import 'package:music_app/widgets/app_bar.dart';
 
 import '../blocs/repositories/audio_handler_repository.dart';
+import '../widgets/task_bar.dart';
+import 'chart.dart';
 
 class MyHomePage extends StatefulWidget {
   final int currentPage;
@@ -20,6 +24,20 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 1; // Current index of the selected item
+  Song? currentSong;
+  void getCurrentSong() async {
+    Song? song = await SharedPreferrenceMethod().getCurrentSong();
+    consoleLog("name", song);
+    if (song != null) {
+      context
+          .read<AudioHandleRepository>()
+          .audioHandler
+          .updateQueue([song.toMediaItem()]);
+      setState(() {
+        currentSong = song;
+      });
+    }
+  }
 
   // Define a list of screens or pages to navigate to when a bottom navigation item is tapped
   final List<Widget> _screens = [];
@@ -41,8 +59,9 @@ class _MyHomePageState extends State<MyHomePage> {
         callback: handleCallback,
       ),
       const DiscoverPage(),
-      ProfileScreen(),
+      const ChartScreen(),
     ]);
+    getCurrentSong();
     _currentIndex = widget.currentPage;
 
     BlocProvider.of<DownloadSongsBloc>(context).add(FetchDownloadSongs());
@@ -63,15 +82,36 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: MyAppBar(
-            avatarUrl:
-                "https://nhadepso.com/wp-content/uploads/2023/03/loa-mat-voi-101-hinh-anh-avatar-meo-cute-dang-yeu-dep-mat_2.jpg",
-            controller: controller,
-            searchFunction: searchFunction,
-          )),
-      body: _screens[_currentIndex],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: MyAppBar(
+          avatarUrl:
+              "https://nhadepso.com/wp-content/uploads/2023/03/loa-mat-voi-101-hinh-anh-avatar-meo-cute-dang-yeu-dep-mat_2.jpg",
+          controller: controller,
+          searchFunction: searchFunction,
+          actionWidget: IconButton(
+            onPressed: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingScreen(),
+                  ));
+            },
+            icon: const Icon(Icons.settings),
+            iconSize: 34,
+          ),
+        ),
+      ),
+      body: Stack(
+        children: [
+          _screens[_currentIndex],
+          Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: currentSong != null ? const TaskBar() : const SizedBox())
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex, // Current index of the selected item
         onTap: (int index) {
@@ -95,15 +135,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class ProfileScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text('Profile Screen'),
     );
   }
 }

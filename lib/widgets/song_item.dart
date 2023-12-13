@@ -1,7 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:music_app/models/song.dart';
-import 'package:music_app/screens/detail_song.dart';
 import 'package:music_app/widgets/song_bottomSheet.dart';
 
 class SongWidget extends StatelessWidget {
@@ -9,14 +9,21 @@ class SongWidget extends StatelessWidget {
   final Color? topTitleColor;
   final bool isFavouriteSong;
   final Song song;
+  final Widget? actionButton;
+  final Widget? modalBottomSheet;
+  final String? typeofBottomSheet;
+  final int? playlistId;
 
-  const SongWidget({
-    super.key,
-    this.topTitle,
-    this.topTitleColor,
-    required this.isFavouriteSong,
-    required this.song,
-  });
+  const SongWidget(
+      {super.key,
+      this.topTitle,
+      this.topTitleColor,
+      this.isFavouriteSong = false,
+      required this.song,
+      this.actionButton,
+      this.modalBottomSheet,
+      this.typeofBottomSheet,
+      this.playlistId});
 
   @override
   Widget build(BuildContext context) {
@@ -37,31 +44,28 @@ class SongWidget extends StatelessWidget {
             width: 10,
           ),
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              song.imageSong,
-              loadingBuilder: (BuildContext context, Widget child,
-                  ImageChunkEvent? loadingProgress) {
-                if (loadingProgress == null) {
-                  return child; // Return the image if it's loaded successfully
-                }
-                return CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
-                );
-              },
-              errorBuilder: (BuildContext context, Object exception,
-                  StackTrace? stackTrace) {
-                // Catch network image loading failure and display a fallback AssetImage
-                return Image.asset(
-                  "assets/images/meow.jpg",
-                  fit: BoxFit.cover,
-                );
-              },
-            ),
-          ),
+              borderRadius: BorderRadius.circular(10),
+              child: CachedNetworkImage(
+                imageUrl: song.imageSong,
+                placeholder: (context, url) => Container(
+                  height: 50,
+                  width: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                imageBuilder: (context, imageProvider) {
+                  return Container(
+                    height: 50,
+                    width: 50,
+                    decoration: BoxDecoration(
+                        image: DecorationImage(
+                            image: imageProvider, fit: BoxFit.cover)),
+                  );
+                },
+                errorWidget: (context, url, error) => const Icon(Icons.error),
+              )),
           const SizedBox(
             width: 10,
           ),
@@ -114,18 +118,25 @@ class SongWidget extends StatelessWidget {
                         FontAwesomeIcons.solidHeart,
                         color: Colors.red,
                       )),
-                IconButton(
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        isDismissible: true,
-                        builder: (context) => SongBottomSheet(
-                          song: song,
-                        ),
-                      );
-                    },
-                    icon: const FaIcon(FontAwesomeIcons.ellipsisVertical)),
+                actionButton != null
+                    ? actionButton!
+                    : IconButton(
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            isDismissible: true,
+                            builder: (context) => modalBottomSheet != null
+                                ? modalBottomSheet!
+                                : SongBottomSheet(
+                                    song: song,
+                                    typeBottomsheet:
+                                        typeofBottomSheet ?? 'online',
+                                    playlistId: playlistId,
+                                  ),
+                          );
+                        },
+                        icon: const FaIcon(FontAwesomeIcons.ellipsisVertical)),
               ],
             ),
           )

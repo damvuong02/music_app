@@ -26,7 +26,7 @@ class DownloadSongScreen extends StatefulWidget {
 class _DownloadSongScreenState extends State<DownloadSongScreen> {
   TextEditingController textController = TextEditingController();
   Song? currentSong;
-  bool isSetedDownloadListSong = false;
+  bool isUpdatedQueue = false;
   int? currentSongIndex;
   void getCurrentSong() async {
     Song? song = await SharedPreferrenceMethod().getCurrentSong();
@@ -81,7 +81,7 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
                             context
                                 .read<AudioHandleRepository>()
                                 .setCurrentPlayingPlaylist("download");
-                            if (!isSetedDownloadListSong) {
+                            if (!isUpdatedQueue) {
                               await _audioHandler.updateQueue(listMedia);
                             }
 
@@ -121,7 +121,7 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
                             context
                                 .read<AudioHandleRepository>()
                                 .setCurrentPlayingPlaylist("download");
-                            if (!isSetedDownloadListSong) {
+                            if (!isUpdatedQueue) {
                               await _audioHandler.updateQueue(listMedia);
                             }
 
@@ -131,6 +131,7 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
                           },
                           child: SongWidget(
                             isFavouriteSong: false,
+                            typeofBottomSheet: 'download',
                             song: Song(
                                 id: song.id,
                                 title: song.title,
@@ -140,7 +141,8 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
                                 isDownloadInApp: song.isDownloadInApp),
                           ),
                         );
-                      }))
+                      })),
+                      const SizedBox(height: 70)
                     ],
                   ),
                 ),

@@ -6,11 +6,13 @@ class MyAppBar extends StatelessWidget {
   final TextEditingController controller;
   final Function searchFunction;
   final String? avatarUrl;
+  final Widget? actionWidget;
   const MyAppBar(
       {super.key,
       required this.controller,
       required this.searchFunction,
-      required this.avatarUrl});
+      required this.avatarUrl,
+      this.actionWidget});
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +44,7 @@ class MyAppBar extends StatelessWidget {
           const SizedBox(
             width: 30,
           ),
+          actionWidget != null ? actionWidget! : const SizedBox()
         ],
       ),
     );
