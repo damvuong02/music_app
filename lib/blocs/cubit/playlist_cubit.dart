@@ -7,7 +7,7 @@ class PlaylistCubit extends Cubit<List<Playlist>> {
   void getAllPlaylist() async {
     List<Playlist> tempSongs = await DatabaseHelper().getAllPlaylists();
 
-    emit(state + tempSongs);
+    emit(tempSongs);
   }
 
   void createPlaylist(Playlist playlist) async {

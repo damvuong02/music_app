@@ -5,6 +5,7 @@ import 'package:music_app/audio_handel.dart';
 import 'package:music_app/blocs/repositories/audio_handler_repository.dart';
 import 'package:music_app/methods/shared_preference_method.dart';
 import 'package:music_app/models/song.dart';
+import 'package:music_app/screens/playlist_screen.dart';
 import 'package:music_app/utilities/consoleLog.dart';
 import 'package:music_app/widgets/cache_circle_image.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -119,262 +120,230 @@ class _DetailSongState extends State<DetailSong> with TickerProviderStateMixin {
               icon: const Icon(FontAwesomeIcons.ellipsisVertical))
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // MediaItem display
-            Expanded(
-              child: StreamBuilder<MediaItem?>(
-                stream: _audioHandler.mediaItem,
-                builder: (context, snapshot) {
-                  final mediaItem = snapshot.data;
-                  if (mediaItem == null) return const SizedBox();
-                  SharedPreferrenceMethod().setCurrentSong(Song(
-                      id: 0,
-                      title: mediaItem.title,
-                      link: mediaItem.id,
-                      album: mediaItem.album,
-                      artist: mediaItem.artist,
-                      duration: mediaItem.duration,
-                      imageSong: mediaItem.artUri.toString()));
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      if (mediaItem.artUri != null)
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Center(
-                              child: RotationTransition(
-                                turns: Tween(begin: 0.0, end: 1.0)
-                                    .animate(_controller),
-                                child: CacheCircleImage(
-                                    mediaItem.artUri!.toString(), 150),
+      body: GestureDetector(
+        onHorizontalDragUpdate: (details) {
+          int sensitivity = 4;
+          if (details.delta.dx > sensitivity) {
+            // Right Swipe
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PlaylistScreen(),
+                ));
+          }
+        },
+        //phải có Container và set màu thì mới bắt được sự kiện vuốt trong toàn bộ màn hình
+        child: Container(
+          color: Colors.transparent,
+          child: Column(
+            children: [
+              // MediaItem display
+              Expanded(
+                child: StreamBuilder<MediaItem?>(
+                  stream: _audioHandler.mediaItem,
+                  builder: (context, snapshot) {
+                    final mediaItem = snapshot.data;
+                    if (mediaItem == null) return const SizedBox();
+                    SharedPreferrenceMethod().setCurrentSong(Song(
+                        id: 0,
+                        title: mediaItem.title,
+                        link: mediaItem.id,
+                        album: mediaItem.album,
+                        artist: mediaItem.artist,
+                        duration: mediaItem.duration,
+                        imageSong: mediaItem.artUri.toString()));
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (mediaItem.artUri != null)
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Center(
+                                child: RotationTransition(
+                                  turns: Tween(begin: 0.0, end: 1.0)
+                                      .animate(_controller),
+                                  child: CacheCircleImage(
+                                      mediaItem.artUri!.toString(), 150),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+
+              // A seek bar.
+              StreamBuilder<PositionData>(
+                stream: _positionDataStream,
+                builder: (context, snapshot) {
+                  final positionData = snapshot.data ??
+                      PositionData(Duration.zero, Duration.zero, Duration.zero);
+                  return SeekBar(
+                    duration: positionData.duration,
+                    position: positionData.position,
+                    onChangeEnd: (newPosition) {
+                      _audioHandler.seek(newPosition);
+                    },
                   );
                 },
               ),
-            ),
-
-            // A seek bar.
-            StreamBuilder<PositionData>(
-              stream: _positionDataStream,
-              builder: (context, snapshot) {
-                final positionData = snapshot.data ??
-                    PositionData(Duration.zero, Duration.zero, Duration.zero);
-                return SeekBar(
-                  duration: positionData.duration,
-                  position: positionData.position,
-                  onChangeEnd: (newPosition) {
-                    _audioHandler.seek(newPosition);
-                  },
-                );
-              },
-            ),
-            // Playback controls
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  StreamBuilder<AudioServiceRepeatMode>(
-                    stream: _audioHandler.playbackState
-                        .map((state) => state.repeatMode)
-                        .distinct(),
-                    builder: (context, snapshot) {
-                      final repeatMode =
-                          snapshot.data ?? AudioServiceRepeatMode.none;
-                      const icons = [
-                        Icon(
-                          FontAwesomeIcons.repeat,
-                          color: Colors.grey,
-                          size: 38,
-                        ),
-                        Icon(
-                          FontAwesomeIcons.repeat,
-                          color: Colors.orange,
-                          size: 38,
-                        ),
-                        Icon(
-                          Icons.repeat_one,
-                          color: Colors.orange,
-                          size: 45,
-                        ),
-                      ];
-                      const cycleModes = [
-                        AudioServiceRepeatMode.none,
-                        AudioServiceRepeatMode.all,
-                        AudioServiceRepeatMode.one,
-                      ];
-                      final index = cycleModes.indexOf(repeatMode);
-                      return IconButton(
-                        icon: icons[index],
-                        onPressed: () {
-                          _audioHandler.setRepeatMode(cycleModes[
-                              (cycleModes.indexOf(repeatMode) + 1) %
-                                  cycleModes.length]);
-                          SharedPreferrenceMethod().setRepeatSongList(
-                              (cycleModes.indexOf(repeatMode) + 1) %
-                                  cycleModes.length);
-                        },
-                      );
-                    },
-                  ),
-                  const Expanded(child: SizedBox()),
-                  StreamBuilder<QueueState>(
-                    stream: _audioHandler.queueState,
-                    builder: (context, snapshot) {
-                      final queueState = snapshot.data ?? QueueState.empty;
-                      return IconButton(
-                        icon: const Icon(
-                          FontAwesomeIcons.backwardStep,
-                          size: 45,
-                        ),
-                        onPressed: queueState.hasPrevious
-                            ? _audioHandler.skipToPrevious
-                            : null,
-                      );
-                    },
-                  ),
-                  StreamBuilder<PlaybackState>(
-                    stream: _audioHandler.playbackState,
-                    builder: (context, snapshot) {
-                      final playbackState = snapshot.data;
-                      final processingState = playbackState?.processingState;
-                      final playing = playbackState?.playing;
-                      if (processingState == AudioProcessingState.loading ||
-                          processingState == AudioProcessingState.buffering) {
-                        return Container(
-                          margin: const EdgeInsets.all(8.0),
-                          width: 64.0,
-                          height: 64.0,
-                          child: const CircularProgressIndicator(),
-                        );
-                      } else if (playing != true) {
+              // Playback controls
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    StreamBuilder<AudioServiceRepeatMode>(
+                      stream: _audioHandler.playbackState
+                          .map((state) => state.repeatMode)
+                          .distinct(),
+                      builder: (context, snapshot) {
+                        final repeatMode =
+                            snapshot.data ?? AudioServiceRepeatMode.none;
+                        const icons = [
+                          Icon(
+                            FontAwesomeIcons.repeat,
+                            color: Colors.grey,
+                            size: 38,
+                          ),
+                          Icon(
+                            FontAwesomeIcons.repeat,
+                            color: Colors.orange,
+                            size: 38,
+                          ),
+                          Icon(
+                            Icons.repeat_one,
+                            color: Colors.orange,
+                            size: 45,
+                          ),
+                        ];
+                        const cycleModes = [
+                          AudioServiceRepeatMode.none,
+                          AudioServiceRepeatMode.all,
+                          AudioServiceRepeatMode.one,
+                        ];
+                        final index = cycleModes.indexOf(repeatMode);
                         return IconButton(
-                          icon: const Icon(FontAwesomeIcons.circlePlay),
-                          iconSize: 64.0,
+                          icon: icons[index],
                           onPressed: () {
-                            _audioHandler.play();
-                            _controller.repeat(reverse: false);
+                            _audioHandler.setRepeatMode(cycleModes[
+                                (cycleModes.indexOf(repeatMode) + 1) %
+                                    cycleModes.length]);
+                            SharedPreferrenceMethod().setRepeatSongList(
+                                (cycleModes.indexOf(repeatMode) + 1) %
+                                    cycleModes.length);
                           },
                         );
-                      } else {
+                      },
+                    ),
+                    const Expanded(child: SizedBox()),
+                    StreamBuilder<QueueState>(
+                      stream: _audioHandler.queueState,
+                      builder: (context, snapshot) {
+                        final queueState = snapshot.data ?? QueueState.empty;
                         return IconButton(
-                          icon: const Icon(FontAwesomeIcons.circlePause),
-                          iconSize: 64.0,
-                          onPressed: () {
-                            _audioHandler.pause();
-                            _controller.stop();
+                          icon: const Icon(
+                            FontAwesomeIcons.backwardStep,
+                            size: 45,
+                          ),
+                          onPressed: queueState.hasPrevious
+                              ? _audioHandler.skipToPrevious
+                              : null,
+                        );
+                      },
+                    ),
+                    StreamBuilder<PlaybackState>(
+                      stream: _audioHandler.playbackState,
+                      builder: (context, snapshot) {
+                        final playbackState = snapshot.data;
+                        final processingState = playbackState?.processingState;
+                        final playing = playbackState?.playing;
+                        if (processingState == AudioProcessingState.loading ||
+                            processingState == AudioProcessingState.buffering) {
+                          return Container(
+                            margin: const EdgeInsets.all(8.0),
+                            width: 64.0,
+                            height: 64.0,
+                            child: const CircularProgressIndicator(),
+                          );
+                        } else if (playing != true) {
+                          return IconButton(
+                            icon: const Icon(FontAwesomeIcons.circlePlay),
+                            iconSize: 64.0,
+                            onPressed: () {
+                              _audioHandler.play();
+                              _controller.repeat(reverse: false);
+                            },
+                          );
+                        } else {
+                          return IconButton(
+                            icon: const Icon(FontAwesomeIcons.circlePause),
+                            iconSize: 64.0,
+                            onPressed: () {
+                              _audioHandler.pause();
+                              _controller.stop();
+                            },
+                          );
+                        }
+                      },
+                    ),
+                    StreamBuilder<QueueState>(
+                      stream: _audioHandler.queueState,
+                      builder: (context, snapshot) {
+                        final queueState = snapshot.data ?? QueueState.empty;
+                        return IconButton(
+                          icon: const Icon(
+                            FontAwesomeIcons.forwardStep,
+                            size: 45,
+                          ),
+                          onPressed: queueState.hasNext
+                              ? _audioHandler.skipToNext
+                              : null,
+                        );
+                      },
+                    ),
+                    const Expanded(child: SizedBox()),
+                    StreamBuilder<bool>(
+                      stream: _audioHandler.playbackState
+                          .map((state) =>
+                              state.shuffleMode == AudioServiceShuffleMode.all)
+                          .distinct(),
+                      builder: (context, snapshot) {
+                        final shuffleModeEnabled = snapshot.data ?? false;
+                        return IconButton(
+                          icon: shuffleModeEnabled
+                              ? const Icon(
+                                  FontAwesomeIcons.shuffle,
+                                  color: Colors.orange,
+                                  size: 38,
+                                )
+                              : const Icon(
+                                  FontAwesomeIcons.shuffle,
+                                  color: Colors.grey,
+                                  size: 38,
+                                ),
+                          onPressed: () async {
+                            final enable = !shuffleModeEnabled;
+                            await _audioHandler.setShuffleMode(enable
+                                ? AudioServiceShuffleMode.all
+                                : AudioServiceShuffleMode.none);
+                            SharedPreferrenceMethod()
+                                .setRandomSong(enable ? true : false);
                           },
                         );
-                      }
-                    },
-                  ),
-                  StreamBuilder<QueueState>(
-                    stream: _audioHandler.queueState,
-                    builder: (context, snapshot) {
-                      final queueState = snapshot.data ?? QueueState.empty;
-                      return IconButton(
-                        icon: const Icon(
-                          FontAwesomeIcons.forwardStep,
-                          size: 45,
-                        ),
-                        onPressed: queueState.hasNext
-                            ? _audioHandler.skipToNext
-                            : null,
-                      );
-                    },
-                  ),
-                  const Expanded(child: SizedBox()),
-                  StreamBuilder<bool>(
-                    stream: _audioHandler.playbackState
-                        .map((state) =>
-                            state.shuffleMode == AudioServiceShuffleMode.all)
-                        .distinct(),
-                    builder: (context, snapshot) {
-                      final shuffleModeEnabled = snapshot.data ?? false;
-                      return IconButton(
-                        icon: shuffleModeEnabled
-                            ? const Icon(
-                                FontAwesomeIcons.shuffle,
-                                color: Colors.orange,
-                                size: 38,
-                              )
-                            : const Icon(
-                                FontAwesomeIcons.shuffle,
-                                color: Colors.grey,
-                                size: 38,
-                              ),
-                        onPressed: () async {
-                          final enable = !shuffleModeEnabled;
-                          await _audioHandler.setShuffleMode(enable
-                              ? AudioServiceShuffleMode.all
-                              : AudioServiceShuffleMode.none);
-                          SharedPreferrenceMethod()
-                              .setRandomSong(enable ? true : false);
-                        },
-                      );
-                    },
-                  ),
-                ],
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 8.0),
-            // Repeat/shuffle controls
-
-            // Playlist
-            // SizedBox(
-            //   height: 240.0,
-            //   child: StreamBuilder<QueueState>(
-            //     stream: _audioHandler.queueState,
-            //     builder: (context, snapshot) {
-            //       final queueState = snapshot.data ?? QueueState.empty;
-            //       final queue = queueState.queue;
-            //       return ReorderableListView(
-            //         onReorder: (int oldIndex, int newIndex) {
-            //           if (oldIndex < newIndex) newIndex--;
-            //           _audioHandler.moveQueueItem(oldIndex, newIndex);
-            //         },
-            //         children: [
-            //           for (var i = 0; i < queue.length; i++)
-            //             Dismissible(
-            //               key: ValueKey(queue[i].id),
-            //               background: Container(
-            //                 color: Colors.redAccent,
-            //                 alignment: Alignment.centerRight,
-            //                 child: const Padding(
-            //                   padding: EdgeInsets.only(right: 8.0),
-            //                   child: Icon(Icons.delete, color: Colors.white),
-            //                 ),
-            //               ),
-            //               onDismissed: (dismissDirection) {
-            //                 _audioHandler.removeQueueItem(queue[i]);
-            //                 queue.removeAt(i);
-            //               },
-            //               child: Material(
-            //                 color: i == queueState.queueIndex
-            //                     ? Colors.grey.shade300
-            //                     : null,
-            //                 child: ListTile(
-            //                   title: Text(queue[i].title),
-            //                   onTap: () => _audioHandler.skipToQueueItem(i),
-            //                 ),
-            //               ),
-            //             ),
-            //         ],
-            //       );
-            //     },
-            //   ),
-            // ),
-            Expanded(child: SizedBox())
-          ],
+              const SizedBox(height: 8.0),
+              // Repeat/shuffle controls
+              Expanded(child: const SizedBox())
+            ],
+          ),
         ),
       ),
     );

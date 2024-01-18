@@ -65,56 +65,60 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
                 decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     color: const Color(0xff110a19)),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      MyAppBar(
-                        avatarUrl: null,
-                        controller: textController,
-                        searchFunction: () {},
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        width: MediaQuery.sizeOf(context).width * 0.6,
-                        child: InkWell(
-                          onTap: () async {
-                            context
-                                .read<AudioHandleRepository>()
-                                .setCurrentPlayingPlaylist("download");
-                            if (!isUpdatedQueue) {
-                              await _audioHandler.updateQueue(listMedia);
-                            }
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                        child: Column(
+                      children: [
+                        MyAppBar(
+                          avatarUrl: null,
+                          controller: textController,
+                          searchFunction: () {},
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          width: MediaQuery.sizeOf(context).width * 0.6,
+                          child: InkWell(
+                            onTap: () async {
+                              context
+                                  .read<AudioHandleRepository>()
+                                  .setCurrentPlayingPlaylist("download");
+                              if (!isUpdatedQueue) {
+                                await _audioHandler.updateQueue(listMedia);
+                              }
 
-                            await _audioHandler
-                                .setShuffleMode(AudioServiceShuffleMode.all);
-                            SharedPreferrenceMethod().setRandomSong(true);
-                            Random random = Random();
-                            int index =
-                                random.nextInt(state.downloadSongs.length);
-                            await _audioHandler.skipToQueueItem(index);
-                            Navigator.of(context)
-                                .push(_createRoute(DetailSong()));
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 10, horizontal: 10),
-                            decoration: BoxDecoration(
-                                color: const Color(0xffA637DA),
-                                borderRadius: BorderRadius.circular(20)),
-                            child: const Text(
-                              "PHÁT NGẪU NHIÊN",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold),
+                              await _audioHandler
+                                  .setShuffleMode(AudioServiceShuffleMode.all);
+                              SharedPreferrenceMethod().setRandomSong(true);
+                              Random random = Random();
+                              int index =
+                                  random.nextInt(state.downloadSongs.length);
+                              await _audioHandler.skipToQueueItem(index);
+                              Navigator.of(context)
+                                  .push(_createRoute(DetailSong()));
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 10),
+                              decoration: BoxDecoration(
+                                  color: const Color(0xffA637DA),
+                                  borderRadius: BorderRadius.circular(20)),
+                              child: const Text(
+                                "PHÁT NGẪU NHIÊN",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      Column(
-                          children: List.generate(state.downloadSongs.length,
-                              (index) {
+                      ],
+                    )),
+                    SliverList.builder(
+                      itemCount: state.downloadSongs.length,
+                      itemBuilder: (context, index) {
                         Song song = state.downloadSongs[index];
                         return InkWell(
                           onTap: () async {
@@ -130,21 +134,13 @@ class _DownloadSongScreenState extends State<DownloadSongScreen> {
                                 .push(_createRoute(DetailSong()));
                           },
                           child: SongWidget(
-                            isFavouriteSong: false,
-                            typeofBottomSheet: 'download',
-                            song: Song(
-                                id: song.id,
-                                title: song.title,
-                                artist: song.artist,
-                                imageSong: song.imageSong,
-                                link: song.link,
-                                isDownloadInApp: song.isDownloadInApp),
-                          ),
+                              isFavouriteSong: false,
+                              typeofBottomSheet: 'download',
+                              song: song),
                         );
-                      })),
-                      const SizedBox(height: 70)
-                    ],
-                  ),
+                      },
+                    )
+                  ],
                 ),
               ),
               Positioned(

@@ -227,23 +227,26 @@ class _SongBottomSheetState extends State<SongBottomSheet> {
           topRight: Radius.circular(10),
         ),
       ),
-      child: Column(children: [
-        ListTile(
-          leading: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: CachedNetworkImage(imageUrl: widget.song.imageSong),
+      child: SingleChildScrollView(
+        child: Column(children: [
+          ListTile(
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: CachedNetworkImage(imageUrl: widget.song.imageSong),
+            ),
+            title: Text(widget.song.title),
+            subtitle: Text(widget.song.artist),
           ),
-          title: Text(widget.song.title),
-          subtitle: Text(widget.song.artist),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 10),
-          child: Divider(
-            thickness: 1,
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Divider(
+              thickness: 1,
+            ),
           ),
-        ),
-        SingleChildScrollView(child: buildOptionList())
-      ]),
+          buildOptionList()
+          // SingleChildScrollView(child: buildOptionList())
+        ]),
+      ),
     );
   }
 }

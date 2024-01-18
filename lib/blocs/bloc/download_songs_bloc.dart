@@ -125,7 +125,7 @@ class DownloadSongsBloc extends Bloc<DownloadSongsEvent, DownloadSongsState> {
     final parts = filePath.split('/');
     final fileName = parts.last;
     String name = fileName.replaceAll('.mp3', '');
-    name = name.replaceAll(RegExp(r'^[\d\W]+'), '');
+    // name = name.replaceAll(RegExp(r'^[\d\W]+'), '');
 
     return name;
   }

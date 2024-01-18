@@ -5,8 +5,7 @@ import 'package:music_app/models/song.dart';
 import 'package:music_app/widgets/song_bottomSheet.dart';
 
 class SongWidget extends StatelessWidget {
-  final String? topTitle;
-  final Color? topTitleColor;
+  final Widget? leading;
   final bool isFavouriteSong;
   final Song song;
   final Widget? actionButton;
@@ -16,8 +15,7 @@ class SongWidget extends StatelessWidget {
 
   const SongWidget(
       {super.key,
-      this.topTitle,
-      this.topTitleColor,
+      this.leading,
       this.isFavouriteSong = false,
       required this.song,
       this.actionButton,
@@ -32,14 +30,7 @@ class SongWidget extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       child: Row(
         children: [
-          if (topTitle != null)
-            Text(
-              topTitle!,
-              style: TextStyle(
-                  color: topTitleColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 30),
-            ),
+          if (leading != null) leading!,
           const SizedBox(
             width: 10,
           ),

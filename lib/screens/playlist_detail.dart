@@ -89,7 +89,6 @@ class _DetailPlaylistState extends State<DetailPlaylist> {
 
                 if (newPlaylistImage != null) {
                   setState(() {
-                    consoleLog("name", newPlaylistImage);
                     playlistImage = newPlaylistImage;
                   });
                 }

@@ -26,6 +26,16 @@ class PlayListItem extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                imageBuilder: (context, image) => Container(
+                  height: 50,
+                  width: 50,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                        fit: BoxFit.cover,
+                        image: CachedNetworkImageProvider(playlist.image)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 errorWidget: (context, url, error) => const Icon(Icons.error),
               )),
           const SizedBox(

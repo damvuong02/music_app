@@ -27,7 +27,6 @@ class _MyHomePageState extends State<MyHomePage> {
   Song? currentSong;
   void getCurrentSong() async {
     Song? song = await SharedPreferrenceMethod().getCurrentSong();
-    consoleLog("name", song);
     if (song != null) {
       context
           .read<AudioHandleRepository>()

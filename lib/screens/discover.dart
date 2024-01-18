@@ -164,8 +164,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
                       children: [
                         SongWidget(
                           isFavouriteSong: false,
-                          topTitle: "1",
-                          topTitleColor: Colors.red,
+                          leading: const Text(
+                            "1",
+                            style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 30),
+                          ),
                           song: Song(
                             id: 1,
                             title: "Anh là ngoại lệ của em",
@@ -178,8 +183,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
                         ),
                         SongWidget(
                           isFavouriteSong: false,
-                          topTitle: "2",
-                          topTitleColor: Colors.yellow,
+                          leading: const Text(
+                            "2",
+                            style: TextStyle(
+                                color: Colors.yellow,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 30),
+                          ),
                           song: Song(
                             id: 2,
                             title: "Gió",
@@ -192,8 +202,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
                         ),
                         SongWidget(
                           isFavouriteSong: false,
-                          topTitle: "3",
-                          topTitleColor: Colors.blueAccent,
+                          leading: const Text(
+                            "3",
+                            style: TextStyle(
+                                color: Colors.blueAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 30),
+                          ),
                           song: Song(
                             id: 3,
                             title: "Hẹn em ở lần yêu thứ 2",
@@ -212,7 +227,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
             ),
             Container(
               height: 500,
-              color: Colors.red,
             )
           ],
         ),
